@@ -2,7 +2,7 @@
 using namespace std;
 
 int bitManipulation3(int n, int i) {
-  return n ^ (int)((long long)(1<<32) - (1<<(32-i)));
+  return n ^ ((1<<32)-(1<<(32-i)));
 }
 
 int main() {
