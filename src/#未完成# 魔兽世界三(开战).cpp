@@ -1,5 +1,11 @@
+/*
+ * @Author: wr786
+ * @Date: 2020-03-11 13:02:36
+ * @Last Modified by: wr786
+ * @Last Modified time: 2020-03-11 22:50:39
+*/
 #include<cstdio>
-#include<algorithm>
+#include<algorithm> 
 #include<string>
 #include<cassert>
 using namespace std;
@@ -57,14 +63,14 @@ class Weapon_List {
 					size--;
 					break;
 				}
-			}	
+			}
 		}
 		Weapon* operator [] (int idx) {assert(idx<size); return ls[idx];}
 		int length() {return size;}
 		friend class Warrior;
 }; // 用来存储weapon的数据结构类
-
-class HeadQuater{ // 提前声明
+class Warrior; // 提前声明
+class HeadQuater{ 
 	protected:
 		int curTypeIdx; // 现在要制造哪个
 		string color;
@@ -99,12 +105,11 @@ class HeadQuater{ // 提前声明
 				}
 			}
 		}
-		void generateWarrior() {
-			//! 需要补全
-		}
-		void tryGenerateNxt();
+		Warrior* generateWarrior();
+		Warrior* tryGenerateNxt();
+		string getColor() {return color;}
 		friend class Warrior;
-};
+} RED("red"), BLUE("blue");
 int HeadQuater::INIT_HEALTH;
 
 //! 默认type顺序是dragon、ninja、iceman、lion、wolf
@@ -131,8 +136,8 @@ class Warrior {
 		bool is_dead() {return health > 0;}
 		void sort1_weaponList();
 		void sort2_weaponList();
-		virtual void print_info() = 0;
 		virtual void do_move_cost() = 0;
+		virtual int get_loyalty() = 0;
 		//todo 编写派生类对应虚函数
 		Warrior(int _tid, int _h, int _a, HeadQuater& _b, int _id):
 			typeIdx(_id), health(_h), attack(_a), belong(&_b), ID(_id) {}
@@ -206,6 +211,7 @@ Weapon* Warrior::get_weapon_of_ID(int wID) {
 				case 1: return new Bomb(attack);
 				case 2: return new Arrow(attack);
 			}
+	printf("[ERROR] 获取武器失败！\n");
 	return new Sword(attack); //// 为了解除编译warning，无视就好
 }
 void Warrior::sort1_weaponList() {
@@ -222,6 +228,7 @@ class Dragon: public Warrior {
 				add_weapon(get_weapon_of_ID(ID%3));
 			}
 		void do_move_cost() {return;}
+		int get_loyalty() {return 1; // 就是为了方便编写而已，没别的，下同。}
 };
 
 class Ninja: public Warrior {
@@ -232,6 +239,7 @@ class Ninja: public Warrior {
 				add_weapon(get_weapon_of_ID((ID+1)%3));
 			}
 		void do_move_cost() {return;}
+		int get_loyalty() {return 1; // 就是为了方便编写而已，没别的，下同。}
 };
 
 class Iceman: public Warrior {
@@ -241,6 +249,7 @@ class Iceman: public Warrior {
 				add_weapon(get_weapon_of_ID(ID%3));
 			}
 		void do_move_cost() {deal_damage(health/10);}
+		int get_loyalty() {return 1; // 就是为了方便编写而已，没别的，下同。}
 };
 
 class Lion: public Warrior {
@@ -253,6 +262,7 @@ class Lion: public Warrior {
 				loyalty = belong->health;
 			}
 		void do_move_cost() {loyalty -= LOYALTY_COST;}
+		int get_loyalty() {return loyalty;}
 };
 
 class Wolf: public Warrior {
@@ -260,9 +270,10 @@ class Wolf: public Warrior {
 		Wolf(int _tid, int _h, int _a, HeadQuater& _b, int _id):
 			Warrior(_tid, _h, _a, _b, _id) {}
 		void do_move_cost() {return;}
+		int get_loyalty() {return 1; // 就是为了方便编写而已，没别的，下同。}
 };
 
-void HeadQuater::tryGenerateNxt() {
+Warrior* HeadQuater::tryGenerateNxt() {
 	int archive = curTypeIdx;
 	while(health < Warrior::initialHealthOf[curTypeIdx]) {
 		nxtTypeIdx();
@@ -270,10 +281,39 @@ void HeadQuater::tryGenerateNxt() {
 			// printf("%03d %s headquarter stops making warriors\n",
 			// 				globalTicker.getTime(), color.c_str());
 			canGenerate = false;
-			return;
+			return NULL;
 		}
 	} // health >= typeCost[curTypeIdx]
-	generateWarrior();
+	return generateWarrior();
+}
+
+Warrior* HeadQuater::generateWarrior() {
+	totalIdx++;
+	typeNum[curTypeIdx]++;
+	health -= Warrior::initialHealthOf[curTypeIdx];
+	Warrior* ret;
+	switch(curTypeIdx) {
+		case 0:
+			ret = new Dragon(curTypeIdx, Warrior::initialHealthOf[curTypeIdx], Warrior::initialAttackOf[curTypeIdx], *this, totalIdx);
+			break;
+		case 1:
+			ret = new Ninja(curTypeIdx, Warrior::initialHealthOf[curTypeIdx], Warrior::initialAttackOf[curTypeIdx], *this, totalIdx);
+			break;
+		case 2:
+			ret = new Iceman(curTypeIdx, Warrior::initialHealthOf[curTypeIdx], Warrior::initialAttackOf[curTypeIdx], *this, totalIdx);
+			break;
+		case 3:
+			ret = new Lion(curTypeIdx, Warrior::initialHealthOf[curTypeIdx], Warrior::initialAttackOf[curTypeIdx], *this, totalIdx);
+			break;
+		case 4:
+			ret = new Wolf(curTypeIdx, Warrior::initialHealthOf[curTypeIdx], Warrior::initialAttackOf[curTypeIdx], *this, totalIdx);
+			break;
+		default:
+			printf("[ERROR] Type越界!\n");
+			break;
+	}
+	nxtTypeIdx();
+	return ret;
 }
 
 // 注意到一个城市中最多只有两个不同阵营的武士
@@ -287,8 +327,26 @@ class BattleGround {
 			for(int i=0; i<22; i++)
 				redSide[i] = blueSide[i] = NULL;
 		} // 初始化
+		void insert_warrior() {
+			if(RED.canGenerate) {
+				redSide[0] = RED.tryGenerateNxt();
+			} // 返回为NULL也正确
+			if(BLUE.canGenerate) {
+				blueSide[CITY_NUM+1] = BLUE.tryGenerateNxt();
+			}
+		}
 		void flee_lion() {
-			//todo 待添加狮子逃跑环节
+			//* 已经到达敌人司令部的lion不会逃跑。lion在己方司令部可能逃跑。
+			for(int i=0; i<=CITY_NUM; i++) {
+				if(redSide[i]->typeIdx == 3 && redSide[i]->get_loyalty() <= 0) {
+					redSide[i] = NULL;
+				}
+			}
+			for(int i=CITY_NUM+1; i; i--) {
+				if(blueSide[i]->typeIdx == 3 && blueSide[i]->get_loyalty() <= 0) {
+					blueSide[i] = NULL;
+				}
+			}
 		}
 		void do_march() {
 			for(int i=CITY_NUM; i>=0; i--) {
@@ -306,7 +364,7 @@ class BattleGround {
 				if(redSide != NULL && blueSide != NULL) { // 双方都有武士在
 					// Wolf的抢夺环节
 					redSide[i]->sort2_weaponList(); blueSide[i]->sort2_weaponList();
-					if(redSide[i]->typeIdx == 4 || blueSide[i]->typeIdx == 4) { 
+					if(redSide[i]->typeIdx == 4 || blueSide[i]->typeIdx == 4) {
 						if(!(redSide[i]->typeIdx == 4 && blueSide[i]->typeIdx == 4)) { // 不都为狼
 							Warrior*& theWolf = (redSide[i]->typeIdx == 4)? redSide[i] : blueSide[i];
 							Warrior*& theOther = (blueSide[i]->typeIdx == 4)? redSide[i] : blueSide[i];
@@ -327,7 +385,7 @@ class BattleGround {
 								}
 							}
 						}
-					} 
+					}
 					// 战斗环节
 					redSide[i]->sort1_weaponList(); blueSide[i]->sort1_weaponList();
 					int battleType = (i%2)? 1:2; //* 判断现在是谁攻击谁，1代表红打蓝，2代表蓝打红
@@ -371,8 +429,8 @@ class BattleGround {
 						}
 						if(!canContinue) break;
 						battleType = 3 - battleType; // 换回合
-					} 
-					// 战利品环节	
+					}
+					// 战利品环节
 					if(redSide[i]->is_dead() && !blueSide[i]->is_dead()) {
 						redSide[i]->sort2_weaponList();
 						for(int j=0; j<redSide[i]->weaponList.length(); j++) {
@@ -392,7 +450,7 @@ class BattleGround {
 					if(blueSide[i]->is_dead()) blueSide[i] = NULL;
 				}
 			}
-		}
+		} //? 这里可能要加入Dragon的yell
 };
 
 int main() {
