@@ -2,7 +2,7 @@
  * @Author: wr786
  * @Date: 2020-03-11 13:02:36
  * @Last Modified by: wr786
- * @Last Modified time: 2020-03-11 22:50:39
+ * @Last Modified time: 2020-03-12 10:14:22
 */
 #include<cstdio>
 #include<algorithm> 
@@ -121,8 +121,8 @@ class Warrior {
 		int attack;
 		HeadQuater* belong;
 		int ID; // 在所属阵营里的编号
-		Weapon_List weaponList;
 	public:
+		Weapon_List weaponList;
 		static string Type[5];
 		static int initialHealthOf[5];
 		static int initialAttackOf[5];
@@ -212,7 +212,7 @@ Weapon* Warrior::get_weapon_of_ID(int wID) {
 				case 2: return new Arrow(attack);
 			}
 	printf("[ERROR] 获取武器失败！\n");
-	return new Sword(attack); //// 为了解除编译warning，无视就好
+	return new Sword(attack); // 为了解除编译warning，无视就好
 }
 void Warrior::sort1_weaponList() {
 	sort(weaponList.ls, weaponList.ls+weaponList.size, cmp1);
@@ -228,7 +228,7 @@ class Dragon: public Warrior {
 				add_weapon(get_weapon_of_ID(ID%3));
 			}
 		void do_move_cost() {return;}
-		int get_loyalty() {return 1; // 就是为了方便编写而已，没别的，下同。}
+		int get_loyalty() {return 1;} // 就是为了方便编写而已，没别的，下同。
 };
 
 class Ninja: public Warrior {
@@ -238,8 +238,8 @@ class Ninja: public Warrior {
 				add_weapon(get_weapon_of_ID(ID%3));
 				add_weapon(get_weapon_of_ID((ID+1)%3));
 			}
-		void do_move_cost() {return;}
-		int get_loyalty() {return 1; // 就是为了方便编写而已，没别的，下同。}
+		virtual void do_move_cost() {return;}
+		virtual int get_loyalty() {return 1;} // 就是为了方便编写而已，没别的，下同。
 };
 
 class Iceman: public Warrior {
@@ -249,7 +249,7 @@ class Iceman: public Warrior {
 				add_weapon(get_weapon_of_ID(ID%3));
 			}
 		void do_move_cost() {deal_damage(health/10);}
-		int get_loyalty() {return 1; // 就是为了方便编写而已，没别的，下同。}
+		virtual int get_loyalty() {return 1;} // 就是为了方便编写而已，没别的，下同。
 };
 
 class Lion: public Warrior {
@@ -269,8 +269,8 @@ class Wolf: public Warrior {
 	public:
 		Wolf(int _tid, int _h, int _a, HeadQuater& _b, int _id):
 			Warrior(_tid, _h, _a, _b, _id) {}
-		void do_move_cost() {return;}
-		int get_loyalty() {return 1; // 就是为了方便编写而已，没别的，下同。}
+		virtual void do_move_cost() {return;}
+		virtual int get_loyalty() {return 1;} // 就是为了方便编写而已，没别的，下同。
 };
 
 Warrior* HeadQuater::tryGenerateNxt() {
@@ -357,7 +357,7 @@ class BattleGround {
 				blueSide[i-1] = blueSide[i]; // 左移
 				blueSide[i+1]->do_move_cost();
 			}
-		}
+		} //todo Iceman的死亡判定
 		void do_battle() {
 			// 战斗环节
 			for(int i=1; i<=CITY_NUM; i++) { // 显然，司令部之中是不需要发生战斗的
@@ -450,10 +450,11 @@ class BattleGround {
 					if(blueSide[i]->is_dead()) blueSide[i] = NULL;
 				}
 			}
-		} //? 这里可能要加入Dragon的yell
+		} //todo 这里可能要加入Dragon的yell
 };
 
 int main() {
+	printf("[INFO] Compile OK.\n");
 	//! 待补充
 	return 0;
 }
