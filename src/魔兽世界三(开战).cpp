@@ -181,6 +181,7 @@ protected:
     int durability; //* 耐久，用到 0 之后要消失
 public:
     static string Type[3];
+    virtual void reset_attack(int owners_attack) = 0;
     virtual void cause_weapon_damage(Warrior* self, Warrior* other) = 0;
     Weapon(int _id, int w_atk, int _d):
             idx(_id), w_attack(w_atk), durability(_d) {}
@@ -205,6 +206,9 @@ public:
         other->deal_damage(w_attack);
 //        durability_down(self);
     }
+    void reset_attack(int owners_attack) {
+        w_attack = owners_attack * 2 / 10;
+    }
 };
 class Bomb: public Weapon {
 public:
@@ -214,6 +218,9 @@ public:
         self->deal_damage(w_attack / 2, true);
         durability_down(self);
     }
+    void reset_attack(int owners_attack) {
+        w_attack = owners_attack * 4 / 10;
+    }
 };
 class Arrow: public Weapon {
 public:
@@ -222,16 +229,21 @@ public:
         other->deal_damage(w_attack);
         durability_down(self);
     }
+    void reset_attack(int owners_attack) {
+        w_attack = owners_attack * 3 / 10;
+    }
 };
 
 bool cmp1 (Weapon* A , Weapon* B) {
     if(A->idx != B->idx) return A->idx < B->idx;
-    else return A->durability < B->durability;
-}
+    else if(A->durability != B->durability) return A->durability < B->durability;
+    else return A->w_attack > B->w_attack;
+} //! 增加了对攻击力排序
 bool cmp2 (Weapon* A , Weapon* B) {
     if(A->idx != B->idx) return A->idx < B->idx;
-    else return A->durability > B->durability;
-}
+    else if(A->durability != B->durability) return A->durability > B->durability;
+    else return A->w_attack > B->w_attack;
+} //! 增加了对攻击力排序
 Weapon* Warrior::get_weapon_of_ID(int wID) {
     switch(wID) {
         case 0: return new Sword(attack);
@@ -472,6 +484,7 @@ public:
                             while(theOther->weaponList.length() > 0 && theWolf->weaponList.length() < 10) {
                                 assert(theOther->weaponList.length() > 0);
                                 if(theOther->weaponList[0]->idx != wp_id) break;
+                                theOther->weaponList[0]->reset_attack(theWolf->attack);
                                 theWolf->weaponList.push_back(theOther->weaponList[0]);
                                 theOther->weaponList.remove_first();
                                 grab_cnt++;
@@ -502,7 +515,7 @@ public:
             if(redSide[i] != nullptr && blueSide[i] != nullptr) { // 双方都有武士在
                 // 战斗环节
                 redSide[i]->sort1_weaponList(); blueSide[i]->sort1_weaponList();
-                int battleType = (i%2)? 1:2; //* 判断现在是谁攻击谁，1代表红打蓝，2代表蓝打红
+                int battleType = (i%2)==1? 1:2; //* 判断现在是谁攻击谁，1代表红打蓝，2代表蓝打红
                 int cur_weapon_id_red = 0, cur_weapon_id_blue = 0;
                 int lr = redSide[i]->weaponList.length(), lb = blueSide[i]->weaponList.length();
                 while(!redSide[i]->is_dead() && !blueSide[i]->is_dead()
@@ -553,6 +566,7 @@ public:
                     redSide[i]->sort2_weaponList();
                     for(int j=0; j<redSide[i]->weaponList.length(); j++) {
                         if(blueSide[i]->weaponList.length() == 10) break;
+                        redSide[i]->weaponList[j]->reset_attack(blueSide[i]->attack);
                         blueSide[i]->weaponList.push_back(redSide[i]->weaponList[j]);
                     }
                 } // 蓝抢红
@@ -560,6 +574,7 @@ public:
                     blueSide[i]->sort2_weaponList();
                     for(int j=0; j<blueSide[i]->weaponList.length(); j++) {
                         if(redSide[i]->weaponList.length() == 10) break;
+                        blueSide[i]->weaponList[j]->reset_attack(redSide[i]->attack);
                         redSide[i]->weaponList.push_back(blueSide[i]->weaponList[j]);
                     }
                 } // 红抢蓝
