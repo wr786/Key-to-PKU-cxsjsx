@@ -1,5 +1,7 @@
 # Key to PKU cxsjsx
 
+<img src=".\logo.jpg">
+
 2020北京大学程序设计实习OpenJudge作业部分题解
 
 > 所有题目来自[OpenJudge](http://cxsjsx.openjudge.cn/)
