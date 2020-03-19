@@ -1,6 +1,6 @@
 # Key to PKU cxsjsx
 
-<img src="./logo.jpg" height=100px>
+<img src="./_logo.jpg" height=100px>
 
 2020北京大学程序设计实习OpenJudge作业部分题解
 
