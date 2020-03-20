@@ -51,7 +51,9 @@ int main(int argc, char* argv[]) {
     ifstream fin(argv[1], ios::in | ios::binary);
     ofstream fout(argv[2], ios::out | ios::binary);
     fin.read((char*)&bmpHeader, sizeof(bmpHeader));
+    int readCnt = fin.gcount();
     fin.read((char*)&bmpInfo, sizeof(bmpInfo));
+    readCnt += fin.gcount();
     int height = bmpInfo.biHeight, width = bmpInfo.biWidth;
     if(height >= MAX_LEN || width >= MAX_LEN) {
         cout << "[ERROR] The file is too large.\n";
@@ -77,8 +79,10 @@ int main(int argc, char* argv[]) {
                 fout.write((char*)&makeupCell, sizeof(makeupCell));
         }
     } else if(bmpInfo.biBitCount == 32) {
-        char rest[84]; // 除去多出来的84字节
-        fin.read((char*)rest, 84);
+        int changeVal = bmpHeader.bfOffBits-readCnt; // 离当前位置的偏移量
+        char* tmp = new char[changeVal]; // 除去偏移量
+        // printf("[DEBUG] changeVal: %d\n", changeVal);
+        fin.read((char*)tmp, changeVal);
         FOR(i,0,height)
             FOR(j,0,width)
                 fin.read((char*)&bitmap_32[i][j], sizeof(bitmap_32[i][j]));
@@ -86,7 +90,7 @@ int main(int argc, char* argv[]) {
         bmpInfo.biHeight = width, bmpInfo.biWidth = height; // 转置
         fout.write((char*)&bmpHeader, sizeof(bmpHeader));
         fout.write((char*)&bmpInfo, sizeof(bmpInfo));
-        fout.write((char*)rest, 84);
+        fout.write((char*)tmp, changeVal);
         for(int i = width-1; i>=0; i--) {
             FOR(j,0,height)
                 fout.write((char*)&bitmap_32[j][i], sizeof(bitmap_32[j][i]));
